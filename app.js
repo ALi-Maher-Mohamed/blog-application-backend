@@ -10,5 +10,6 @@ connetToDb();
 app.use(express.json());
 // Routes
 app.use("/api/auth", require("./routers/authRoute"));
+app.use("/api/users", require("./routers/userRoute"));
 // running server
 app.listen(PORT, () => console.log(`http://localhost:${PORT}`));
