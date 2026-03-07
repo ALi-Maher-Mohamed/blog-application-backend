@@ -8,6 +8,7 @@ const {
   getPostCountctrl,
   deletePostctrl,
   updatePostImageCtrl,
+  toggleLikeCtrl,
 } = require("../controller/postrController");
 
 const validateObjectId = require("../Middlewares/validateObjectId");
@@ -34,4 +35,6 @@ router
     photoUpload.single("image"),
     updatePostImageCtrl,
   );
+
+router.route("/like/:id").put(validateObjectId, verifyToken, toggleLikeCtrl);
 module.exports = router;

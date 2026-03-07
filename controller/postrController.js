@@ -168,7 +168,43 @@ module.exports.updatePostImageCtrl = asyncHandler(async (req, res) => {
       },
     },
     { new: true },
-  ).populate("user", ["-password"]);
+  );
   res.status(200).json(updatedPost);
   fs.unlinkSync(imagePath);
+});
+//  toggle like api/posts/like/:id
+
+module.exports.toggleLikeCtrl = asyncHandler(async (req, res) => {
+  const loggedInUser = req.user.id;
+  const { id: postId } = req.params;
+  let post = await Post.findById(postId);
+  if (!post) {
+    return res.status(404).json({ message: "Post not found" });
+  }
+  const isPostAlreadyLiked = post.likes.find(
+    (user) => user.toString() === loggedInUser,
+  );
+  if (isPostAlreadyLiked) {
+    post = await Post.findByIdAndUpdate(
+      postId,
+      {
+        $pull: {
+          likes: loggedInUser,
+        },
+      },
+      { new: true },
+    );
+  } else {
+    post = await Post.findByIdAndUpdate(
+      postId,
+      {
+        $push: {
+          likes: loggedInUser,
+        },
+      },
+      { new: true },
+    );
+  }
+  // await post.save();
+  res.status(200).json(post);
 });
