@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const connetToDb = require("./config/connectToDb");
+const { errorHandler, notFound } = require("./Middlewares/error");
 
 const PORT = process.env.PORT || 8000;
 // connect to db
@@ -14,5 +15,9 @@ app.use("/api/users", require("./routers/userRoute"));
 app.use("/api/posts", require("./routers/postsRoute"));
 app.use("/api/comments", require("./routers/commentRoute"));
 app.use("/api/categories", require("./routers/categoryRoute"));
+
+app.use(notFound);
+// error handler
+app.use(errorHandler);
 // running server
 app.listen(PORT, () => console.log(`http://localhost:${PORT}`));
