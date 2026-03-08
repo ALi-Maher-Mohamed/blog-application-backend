@@ -9,7 +9,7 @@ const fs = require("fs");
 
 // get all users
 module.exports.getAllUsersctrl = asyncHandler(async (req, res) => {
-  const users = await User.find();
+  const users = await User.find().select("-password").populate("posts");
   res.status(200).json(users);
 });
 // get users count
@@ -20,7 +20,9 @@ module.exports.getUsersCountctrl = asyncHandler(async (req, res) => {
 });
 // get user profile
 module.exports.getUserProfilectrl = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findById(req.params.id)
+    .select("-password")
+    .populate("posts");
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
