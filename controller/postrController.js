@@ -5,6 +5,8 @@ const {
   cloudinaryUploadImage,
   cloudinaryRemoveImage,
 } = require("../utils/cloudinary");
+const { Comment } = require("../models/Comments");
+
 const {
   Post,
   validateCreatePost,
@@ -66,9 +68,9 @@ module.exports.getAllPostsctrl = asyncHandler(async (req, res) => {
 });
 
 module.exports.getSingelPostctrl = asyncHandler(async (req, res) => {
-  const post = await Post.findById(req.params.id).populate("user", [
-    "-password",
-  ]);
+  const post = await Post.findById(req.params.id)
+    .populate("user", ["-password"])
+    .populate("comments", ["-password"]);
   if (!post) {
     return res.status(404).json({ message: "Post not found" });
   }
@@ -90,13 +92,14 @@ module.exports.deletePostctrl = asyncHandler(async (req, res) => {
   if (req.user.id == post.user.toString() || req.user.isAdmin) {
     await Post.findByIdAndDelete(req.params.id);
     await cloudinaryRemoveImage(post.image.publicId);
+    // @TODO: DELETE ALL COMENTS belong to post
+    await Comment.deleteMany({ postId: post._id });
     res.status(200).json({ message: "Post deleted successfully" });
   } else {
     res.status(403).json({
       message: "Access Denied, you are not allowed to delete this post",
     });
   }
-  // @TODO: DELETE ALL COMENTS belong to post
 });
 
 module.exports.getPostCountctrl = asyncHandler(async (req, res) => {
