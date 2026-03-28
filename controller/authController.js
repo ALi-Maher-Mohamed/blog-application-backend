@@ -70,6 +70,9 @@ module.exports.loginUserctrl = asyncHandler(async (req, res) => {
     profilePhoto: user.profilePhoto,
 
     token,
+    username: user.username,
+    email: user.email,
+    bio: user.bio,
   });
 });
 
