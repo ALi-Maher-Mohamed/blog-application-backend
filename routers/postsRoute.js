@@ -2,14 +2,14 @@ const router = require("express").Router();
 
 const {
   createPostctrl,
-  updatePostImageCtrl: updatePostctrl,
+  updatePostCtrl,
   getAllPostsctrl,
   getSingelPostctrl,
   getPostCountctrl,
   deletePostctrl,
   updatePostImageCtrl,
   toggleLikeCtrl,
-} = require("../controller/postrController");
+} = require("../controller/postsController");
 
 const validateObjectId = require("../Middlewares/validateObjectId");
 const photoUpload = require("../Middlewares/photoUpload");
@@ -25,7 +25,7 @@ router
   .route("/:id")
   .get(validateObjectId, getSingelPostctrl)
   .delete(validateObjectId, verifyToken, deletePostctrl)
-  .put(validateObjectId, verifyToken, updatePostctrl);
+  .put(validateObjectId, verifyToken, updatePostCtrl);
 
 router
   .route("/update-image/:id")
