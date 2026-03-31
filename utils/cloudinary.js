@@ -1,4 +1,4 @@
-const cloudinary = require("cloudinary").v2;
+const cloudinary = require("cloudinary");
 // const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 cloudinary.config({
@@ -15,17 +15,22 @@ const cloudinaryUploadImage = async (fileToUpload) => {
     return data;
   } catch (error) {
     console.log(error);
-    throw new Error("Interner Server Error (cloudinary)");
+    throw new Error("Interner Server Error (cloudinary000)");
   }
 };
 
 const cloudinaryRemoveImage = async (imagePublicId) => {
   try {
+    if (!imagePublicId) {
+      console.log("No publicId provided");
+      return;
+    }
+
     const data = await cloudinary.uploader.destroy(imagePublicId);
     return data;
   } catch (error) {
-    console.log(error);
-    throw new Error("Interner Server Error (cloudinary)");
+    console.log("Cloudinary Delete Error:", error);
+    throw new Error("Internal Server Error (cloudinary)");
   }
 };
 const cloudinaryRemoveMultipleImage = async (publicIds) => {
@@ -34,7 +39,7 @@ const cloudinaryRemoveMultipleImage = async (publicIds) => {
     return data;
   } catch (error) {
     console.log(error);
-    throw new Error("Interner Server Error (cloudinary)");
+    throw new Error("Interner Server Error (cloudinary222)");
   }
 };
 

@@ -94,7 +94,9 @@ module.exports.updateUserProfilectrl = asyncHandler(async (req, res) => {
       bio: req.body.bio,
     },
     new: true,
-  }).select("-password");
+  })
+    .select("-password")
+    .populate("posts");
 
   res.status(200).json(updatedUser);
 });
