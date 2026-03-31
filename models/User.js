@@ -86,6 +86,18 @@ function validateUpdateUser(obj) {
   });
   return schema.validate(obj);
 }
+function validateEmail(obj) {
+  const schema = joi.object({
+    email: joi.string().trim().min(5).max(255).required().email(),
+  });
+  return schema.validate(obj);
+}
+function validateNewPassword(obj) {
+  const schema = joi.object({
+    password: joi.string().trim().min(8).required(),
+  });
+  return schema.validate(obj);
+}
 // generate token
 UserSchema.methods.generateAuthToken = function () {
   return jwt.sign(
@@ -93,6 +105,7 @@ UserSchema.methods.generateAuthToken = function () {
     process.env.JWT_SECRET,
   );
 };
+
 // user model
 const User = mongoose.model("User", UserSchema);
 
@@ -101,4 +114,6 @@ module.exports = {
   validateUpdateUser,
   validateLoginUser,
   validateRegisterUser,
+  validateNewPassword,
+  validateEmail,
 };

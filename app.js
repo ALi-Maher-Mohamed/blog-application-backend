@@ -22,6 +22,7 @@ app.use("/api/users", require("./routers/userRoute"));
 app.use("/api/posts", require("./routers/postsRoute"));
 app.use("/api/comments", require("./routers/commentRoute"));
 app.use("/api/categories", require("./routers/categoryRoute"));
+app.use("/api/password", require("./routers/passwordRoute"));
 
 app.use(notFound);
 // error handler

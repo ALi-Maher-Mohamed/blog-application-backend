@@ -41,7 +41,7 @@ module.exports.registerUserctrl = asyncHandler(async (req, res) => {
     token: crypto.randomBytes(32).toString("hex"),
   });
   await verificationToken.save();
-  const link = `http://localhost:3000/users/${user._id}/verify/${verificationToken.token}`;
+  const link = `${process.env.CLIENT_DOMAIN}/users/${user._id}/verify/${verificationToken.token}`;
 
   const htmlTemplate = `
 <div>
@@ -92,7 +92,7 @@ module.exports.loginUserctrl = asyncHandler(async (req, res) => {
       });
       await verificationToken.save();
 
-      const link = `http://localhost:3000/users/${user._id}/verify/${verificationToken.token}`;
+      const link = `${process.env.CLIENT_DOMAIN}/users/${user._id}/verify/${verificationToken.token}`;
 
       const htmlTemplate = `
 <div>
