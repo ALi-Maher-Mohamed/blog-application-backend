@@ -2,6 +2,9 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const xss = require("xss-clean");
+const hpp = require("hpp");
+const helmet = require("helmet");
+const rateLimiting = require("express-rate-limit");
 require("dotenv").config();
 const connetToDb = require("./config/connectToDb");
 const { errorHandler, notFound } = require("./Middlewares/error");
@@ -12,9 +15,6 @@ connetToDb();
 // Middleware
 app.use(express.json());
 
-// prevent xss attacks
-app.use(xss());
-// cors policy
 app.use(
   cors({
     origin: "http://localhost:3000",

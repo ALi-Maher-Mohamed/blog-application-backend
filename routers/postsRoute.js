@@ -9,6 +9,8 @@ const {
   deletePostctrl,
   updatePostImageCtrl,
   toggleLikeCtrl,
+  aiSummarizeCtrl,
+  aiWritePostCtrl,
 } = require("../controller/postsController");
 
 const validateObjectId = require("../Middlewares/validateObjectId");
@@ -35,6 +37,9 @@ router
     photoUpload.single("image"),
     updatePostImageCtrl,
   );
+router.post("/ai-write", verifyToken, aiWritePostCtrl);
 
+// Route لتلخيص المقال
+router.post("/ai-summarize", verifyToken, aiSummarizeCtrl);
 router.route("/like/:id").put(validateObjectId, verifyToken, toggleLikeCtrl);
 module.exports = router;

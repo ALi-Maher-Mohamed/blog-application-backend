@@ -1,20 +1,109 @@
 const fs = require("fs");
 const path = require("path");
 const asyncHandler = require("express-async-handler");
+const axios = require("axios");
 const {
   cloudinaryUploadImage,
   cloudinaryRemoveImage,
 } = require("../utils/cloudinary");
 const { Comment } = require("../models/Comments");
-
 const {
   Post,
   validateCreatePost,
   validateUpdatePost,
 } = require("../models/Post");
 
-// create new post
-//  route POST /api/posts
+/**
+ * @desc    Generate AI Content (Write Post)
+ * @route   POST /api/posts/ai-write
+ * @access  private (Logged in user only)
+ */
+module.exports.aiWritePostCtrl = asyncHandler(async (req, res) => {
+  const { title } = req.body;
+
+  try {
+    const response = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a professional content writer. Write a long blog post in simple English. Do NOT use any HTML tags, Markdown, or special formatting. Provide only plain text organized into clear paragraphs.",
+          },
+          {
+            role: "user",
+            content: `Write a blog post about: ${title}`,
+          },
+        ],
+        temperature: 0.7,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const aiText = response.data.choices[0].message.content;
+
+    // إرسال النص الصافي للفرونت إند
+    res.status(200).json({ aiContent: aiText });
+  } catch (err) {
+    console.error("Groq Write Error:", err.response?.data || err.message);
+    res
+      .status(500)
+      .json({ message: "Failed to generate content, please try again later." });
+  }
+});
+
+/**
+ * @desc    Generate AI Summary
+ * @route   POST /api/posts/ai-summarize
+ * @access  private (Logged in user only)
+ */
+module.exports.aiSummarizeCtrl = asyncHandler(async (req, res) => {
+  const { description } = req.body;
+  if (!description || description.length < 100) {
+    return res.status(400).json({ message: "المقال قصير جداً لتلخيصه" });
+  }
+
+  try {
+    const response = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content:
+              "أنت خبير في تحسين محركات البحث. لخص المقال في سطرين بأسلوب مشوق.",
+          },
+          {
+            role: "user",
+            content: `لخص هذا المقال: ${description}`,
+          },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const summary = response.data.choices[0].message.content.trim();
+    res.status(200).json({ summary });
+  } catch (err) {
+    console.error("Groq Summarize Error:", err.response?.data || err.message);
+    res.status(500).json({ message: "فشل في تلخيص المقال" });
+  }
+});
+
+// --- بقية الـ Controllers الأساسية (Create, Get, Delete, Update) ---
 
 module.exports.createPostctrl = asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -26,10 +115,7 @@ module.exports.createPostctrl = asyncHandler(async (req, res) => {
   }
   const imagePath = path.join(__dirname, `../images/${req.file.filename}`);
 
-  // upload image to cloudinary
   const result = await cloudinaryUploadImage(imagePath);
-
-  // create new post
 
   const post = new Post({
     title: req.body.title,
@@ -43,11 +129,9 @@ module.exports.createPostctrl = asyncHandler(async (req, res) => {
   });
   await post.save();
   res.status(201).json(post);
-  // delete local image
   fs.unlinkSync(imagePath);
 });
 
-// get all posts
 module.exports.getAllPostsctrl = asyncHandler(async (req, res) => {
   const POST_PER_PAGE = 3;
   const { pageNumber, category } = req.query;
@@ -56,13 +140,13 @@ module.exports.getAllPostsctrl = asyncHandler(async (req, res) => {
   if (pageNumber) {
     const page = Math.max(1, parseInt(pageNumber));
     posts = await Post.find()
-      .sort({ createdAt: -1 }) // <--- ضيف السطر ده هنا للترتيب من الأحدث للأقدم
+      .sort({ createdAt: -1 })
       .skip((page - 1) * POST_PER_PAGE)
       .limit(POST_PER_PAGE)
       .populate("user", ["-password"]);
   } else if (category) {
     posts = await Post.find({ category })
-      .sort({ createdAt: -1 }) // <--- وضماناً للترتيب هنا أيضاً
+      .sort({ createdAt: -1 })
       .populate("user", ["-password"]);
   } else {
     posts = await Post.find()
@@ -71,10 +155,11 @@ module.exports.getAllPostsctrl = asyncHandler(async (req, res) => {
   }
   res.status(200).json(posts);
 });
+
 module.exports.getSingelPostctrl = asyncHandler(async (req, res) => {
   const post = await Post.findById(req.params.id)
     .populate("user", ["-password"])
-    .populate("comments", ["-password"]);
+    .populate("comments");
   if (!post) {
     return res.status(404).json({ message: "Post not found" });
   }
@@ -86,7 +171,6 @@ module.exports.getPostCountctrl = asyncHandler(async (req, res) => {
   res.status(200).json(count);
 });
 
-// delete post
 module.exports.deletePostctrl = asyncHandler(async (req, res) => {
   const post = await Post.findById(req.params.id);
   if (!post) {
@@ -96,112 +180,70 @@ module.exports.deletePostctrl = asyncHandler(async (req, res) => {
   if (req.user.id == post.user.toString() || req.user.isAdmin) {
     await Post.findByIdAndDelete(req.params.id);
     await cloudinaryRemoveImage(post.image.publicId);
-    // @TODO: DELETE ALL COMENTS belong to post
     await Comment.deleteMany({ postId: post._id });
     res.status(200).json({ message: "Post deleted successfully" });
   } else {
-    res.status(403).json({
-      message: "Access Denied, you are not allowed to delete this post",
-    });
+    res.status(403).json({ message: "Access Denied" });
   }
 });
 
-// update posts
-// api/posts/:id
-
-// update post photo
 module.exports.updatePostImageCtrl = asyncHandler(async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "No file uploaded" });
-  }
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
   const post = await Post.findById(req.params.id);
-  if (!post) {
-    return res.status(404).json({ message: "Post not found" });
-  }
-  if (req.user.id !== post.user.toString()) {
-    return res.status(403).json({
-      message: "Access Denied, you are not allowed to update this post",
-    });
-  }
+  if (!post) return res.status(404).json({ message: "Post not found" });
 
-  // upload image to cloudinary
-
-  // delete old photo if exists
+  if (req.user.id !== post.user.toString())
+    return res.status(403).json({ message: "Access Denied" });
 
   await cloudinaryRemoveImage(post.image.publicId);
-
   const imagePath = path.join(__dirname, `../images/${req.file.filename}`);
   const result = await cloudinaryUploadImage(imagePath);
+
   const updatedPost = await Post.findByIdAndUpdate(
     req.params.id,
-    {
-      $set: {
-        image: {
-          url: result.secure_url,
-          publicId: result.public_id,
-        },
-      },
-    },
+    { $set: { image: { url: result.secure_url, publicId: result.public_id } } },
     { new: true },
   );
   res.status(200).json(updatedPost);
   fs.unlinkSync(imagePath);
 });
-//  toggle like api/posts/like/:id
 
 module.exports.toggleLikeCtrl = asyncHandler(async (req, res) => {
   const loggedInUser = req.user.id;
   const { id: postId } = req.params;
   let post = await Post.findById(postId);
-  if (!post) {
-    return res.status(404).json({ message: "Post not found" });
-  }
+  if (!post) return res.status(404).json({ message: "Post not found" });
+
   const isPostAlreadyLiked = post.likes.find(
     (user) => user.toString() === loggedInUser,
   );
+
   if (isPostAlreadyLiked) {
     post = await Post.findByIdAndUpdate(
       postId,
-      {
-        $pull: {
-          likes: loggedInUser,
-        },
-      },
+      { $pull: { likes: loggedInUser } },
       { new: true },
     );
   } else {
     post = await Post.findByIdAndUpdate(
       postId,
-      {
-        $push: {
-          likes: loggedInUser,
-        },
-      },
+      { $push: { likes: loggedInUser } },
       { new: true },
     );
   }
-  // await post.save();
   res.status(200).json(post);
 });
 
 module.exports.updatePostCtrl = asyncHandler(async (req, res) => {
   const { error } = validateUpdatePost(req.body);
-  if (error) {
-    return res.status(400).json({ message: error.details[0].message });
-  }
+  if (error) return res.status(400).json({ message: error.details[0].message });
 
-  // get the post from db
   const post = await Post.findById(req.params.id);
-  if (!post) {
-    return res.status(404).json({ message: "Post not found" });
-  }
-  // check if the post belong to the user
-  if (req.user.id !== post.user.toString()) {
-    return res.status(403).json({
-      message: "Access Denied, you are not allowed to update this post",
-    });
-  }
-  // update the post
+  if (!post) return res.status(404).json({ message: "Post not found" });
+
+  if (req.user.id !== post.user.toString())
+    return res.status(403).json({ message: "Access Denied" });
+
   const updatedPost = await Post.findByIdAndUpdate(
     req.params.id,
     {
@@ -212,6 +254,9 @@ module.exports.updatePostCtrl = asyncHandler(async (req, res) => {
       },
     },
     { new: true },
-  ).populate("user", ["-password"]);
+  )
+    .populate("user", ["-password"])
+    .populate("comments");
+
   res.status(200).json(updatedPost);
 });
