@@ -38,9 +38,12 @@ module.exports.profilePhotoUploadCtrl = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  const imagePath = path.join(__dirname, `../images/${req.file.filename}`);
+  // ✅ التعديل الجوهري هنا:
+  // بدل ما تبني المسار يدوي وتستخدم كلمة images، استخدم المسار اللي Multer حضرهولك
+  // req.file.path هيكون شايل المسار الصحيح سواء كان لوكال أو في الـ tmp بتاع فيرسيل
+  const imagePath = req.file.path;
 
-  // upload image to cloudinary
+  // رفع الصورة لكلاوديناري
   const result = await cloudinaryUploadImage(imagePath);
 
   const user = await User.findById(req.user.id);
@@ -49,19 +52,21 @@ module.exports.profilePhotoUploadCtrl = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  // delete old photo if exists
+  // مسح الصورة القديمة لو موجودة
   if (user.profilePhoto.publicId) {
     await cloudinaryRemoveImage(user.profilePhoto.publicId);
   }
 
-  // update only fields inside object
+  // تحديث البيانات
   user.profilePhoto.url = result.secure_url;
   user.profilePhoto.publicId = result.public_id;
 
   await user.save();
 
-  // delete local image
-  fs.unlinkSync(imagePath);
+  // مسح الصورة المحلية من الـ tmp بعد الرفع بنجاح
+  if (fs.existsSync(imagePath)) {
+    fs.unlinkSync(imagePath);
+  }
 
   res.status(200).json({
     message: "Profile photo uploaded successfully",
