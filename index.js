@@ -15,14 +15,27 @@ connetToDb();
 // Middleware
 app.use(express.json());
 //
-https: app.use(
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://alimaherblog.vercel.app", // الرابط المختصر (الأساسي)
+  "https://alimaherblog-git-main-ali-maher-mohameds-projects.vercel.app", // الرابط الطويل
+  process.env.CLIENT_DOMAIN,
+];
+
+app.use(
   cors({
-    origin: process.env.CLIENT_DOMAIN,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: function (origin, callback) {
+      // السماح لو الـ origin موجود في المصفوفة أو لو مفيش origin (زي Postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
-);
-// Routes
+); // Routes
 app.get("/", (req, res) => {
   res.send("API is running successfully!");
 });
