@@ -14,8 +14,8 @@ connetToDb();
 
 // Middleware
 app.use(express.json());
-
-app.use(
+//
+https: app.use(
   cors({
     origin: process.env.CLIENT_DOMAIN,
     methods: ["GET", "POST", "PUT", "DELETE"],
