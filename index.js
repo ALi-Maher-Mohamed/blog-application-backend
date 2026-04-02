@@ -17,7 +17,9 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT_DOMAIN,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   }),
 );
 // Routes
@@ -34,5 +36,9 @@ app.use("/api/password", require("./routers/passwordRoute"));
 app.use(notFound);
 // error handler
 app.use(errorHandler);
-// running server
-app.listen(PORT, () => console.log(`http://localhost:${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(
+    `Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`,
+  );
+});
