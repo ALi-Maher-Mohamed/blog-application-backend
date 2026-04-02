@@ -7,7 +7,11 @@
   "type": "commonjs",
   "main": "app.js",
   "scripts": {
-    "dev": "nodemon app"
+    "dev": "nodemon app",
+    "start": "node indes.js"
+  },
+  "engines": {
+    "node": "24.12.0"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
