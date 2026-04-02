@@ -13,7 +13,6 @@ const storage = multer.diskStorage({
     cb(null, fileName);
   },
 });
-
 const photoUpload = multer({
   storage: storage,
   fileFilter: function (req, file, cb) {

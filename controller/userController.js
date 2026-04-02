@@ -69,7 +69,6 @@ module.exports.profilePhotoUploadCtrl = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json({
-    message: "Profile photo uploaded successfully",
     profilePhoto: user.profilePhoto,
   });
 });
