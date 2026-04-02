@@ -21,6 +21,9 @@ app.use(
   }),
 );
 // Routes
+app.get("/", (req, res) => {
+  res.send("API is running successfully!");
+});
 app.use("/api/auth", require("./routers/authRoute"));
 app.use("/api/users", require("./routers/userRoute"));
 app.use("/api/posts", require("./routers/postsRoute"));
