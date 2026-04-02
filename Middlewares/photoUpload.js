@@ -1,9 +1,12 @@
 const path = require("path");
 const multer = require("multer");
+const os = require("os"); // مكتبة مدمجة في Node.js
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../images"));
+    // نستخدم os.tmpdir() أو "/tmp" مباشرة
+    // ده بيضمن إن الكود يشتغل على جهازك (لوكال) وفي فيرسيل برضه
+    cb(null, os.tmpdir());
   },
   filename: function (req, file, cb) {
     const fileName = Date.now() + "-" + file.originalname.replace(/\s/g, "-");
@@ -21,7 +24,7 @@ const photoUpload = multer({
     }
   },
   limits: {
-    fileSize: 1024 * 1024 * 5,
+    fileSize: 1024 * 1024 * 5, // 5MB
   },
 });
 
