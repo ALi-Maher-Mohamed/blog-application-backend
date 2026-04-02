@@ -108,17 +108,25 @@ module.exports.aiSummarizeCtrl = asyncHandler(async (req, res) => {
 // --- بقية الـ Controllers الأساسية (Create, Get, Delete, Update) ---
 
 module.exports.createPostctrl = asyncHandler(async (req, res) => {
+  // 1. التأكد من وجود الملف
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
   }
+
+  // 2. التحقق من البيانات
   const { error } = validateCreatePost(req.body);
   if (error) {
     return res.status(400).json({ message: error.details[0].message });
   }
-  const imagePath = path.join(__dirname, `../images/${req.file.filename}`);
 
+  // 3. الحل السحري: نستخدم المسار اللي multer وفرهولنا أياً كان مكانه
+  // ده هيشتغل لوكال (images) وهيشتغل على فيرسيل (tmp)
+  const imagePath = req.file.path;
+
+  // 4. الرفع لكلاوديناري
   const result = await cloudinaryUploadImage(imagePath);
 
+  // 5. حفظ في الداتابيز
   const post = new Post({
     title: req.body.title,
     description: req.body.description,
@@ -129,9 +137,16 @@ module.exports.createPostctrl = asyncHandler(async (req, res) => {
     category: req.body.category,
     user: req.user.id,
   });
+
   await post.save();
+
+  // 6. الرد على الكلاينت أولاً
   res.status(201).json(post);
-  fs.unlinkSync(imagePath);
+
+  // 7. مسح الملف المؤقت عشان السيرفر يفضل نضيف
+  if (fs.existsSync(imagePath)) {
+    fs.unlinkSync(imagePath);
+  }
 });
 
 module.exports.getAllPostsctrl = asyncHandler(async (req, res) => {
