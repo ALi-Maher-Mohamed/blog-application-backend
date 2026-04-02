@@ -67,7 +67,9 @@ module.exports.aiWritePostCtrl = asyncHandler(async (req, res) => {
 module.exports.aiSummarizeCtrl = asyncHandler(async (req, res) => {
   const { description } = req.body;
   if (!description || description.length < 100) {
-    return res.status(400).json({ message: "المقال قصير جداً لتلخيصه" });
+    return res
+      .status(400)
+      .json({ message: "Description must be at least 100 characters" });
   }
 
   try {
