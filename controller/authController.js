@@ -10,6 +10,8 @@ const {
   validateUpdateUser,
 } = require("../models/User");
 const VerificationToken = require("../models/VerificationToken");
+const { getVerificationEmailHTML } = require("./reset-password-template");
+
 // register new user
 // route POST /api/auth/register
 
@@ -42,14 +44,11 @@ module.exports.registerUserctrl = asyncHandler(async (req, res) => {
   });
   await verificationToken.save();
   const link = `${process.env.CLIENT_DOMAIN}/users/${user._id}/verify/${verificationToken.token}`;
+  const htmlTemplate = getVerificationEmailHTML(link, req.body.username);
 
-  const htmlTemplate = `
-<div>
-  <h1>Verify Your Email</h1>
-  <p>Click the link below to verify your email:</p>
-  <a href="${link}">Verify Email</a>
-</div>
-`;
+  // Email Verification Template
+  // استخدم هذه الدالة لإنشاء HTML الخاص بالإيميل
+
   await sendEmail({
     userEmail: user.email,
     subject: "Verify Your Email",

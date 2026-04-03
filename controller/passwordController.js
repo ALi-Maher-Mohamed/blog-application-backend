@@ -11,6 +11,8 @@ const {
 } = require("../models/User");
 const VerificationToken = require("../models/VerificationToken");
 
+const { getResetPasswordEmailHTML } = require("./reset-password-template");
+
 module.exports.sendResetPasswordELinkCtrl = asyncHandler(async (req, res) => {
   const { error } = validateEmail(req.body);
   if (error) {
@@ -22,34 +24,29 @@ module.exports.sendResetPasswordELinkCtrl = asyncHandler(async (req, res) => {
     return res
       .status(400)
       .json({ message: "User with this email is not found" });
-  } else {
-    let verificationToken = await VerificationToken.findOne({
-      userId: user._id,
-    });
-    if (!verificationToken) {
-      verificationToken = new VerificationToken({
-        userId: user._id,
-        token: crypto.randomBytes(32).toString("hex"),
-      });
-      await verificationToken.save();
-    }
-    const link = `${process.env.CLIENT_DOMAIN}/reset-password/${user._id}/${verificationToken.token}`;
-    const htmlTemplate = `
-    <div>
-      <h1>Reset Password</h1>
-      <p>Click the link below to reset your password:</p>
-      <a href="${link}">Reset Password</a>
-    </div>
-  `;
-    await sendEmail({
-      userEmail: user.email,
-      subject: "Reset Password",
-      htmlTemplate: htmlTemplate,
-    });
-    res.status(200).json({
-      message: "ٌReset password Email was sent , please check your email",
-    });
   }
+
+  let verificationToken = await VerificationToken.findOne({ userId: user._id });
+  if (!verificationToken) {
+    verificationToken = new VerificationToken({
+      userId: user._id,
+      token: crypto.randomBytes(32).toString("hex"),
+    });
+    await verificationToken.save();
+  }
+
+  const link = `${process.env.CLIENT_DOMAIN}/reset-password/${user._id}/${verificationToken.token}`;
+  const htmlTemplate = getResetPasswordEmailHTML(link, user.username);
+
+  await sendEmail({
+    userEmail: user.email,
+    subject: "Reset Password",
+    htmlTemplate,
+  });
+
+  res.status(200).json({
+    message: "Reset password email was sent, please check your email",
+  });
 });
 
 module.exports.getResetPasswordLinkCtrl = asyncHandler(async (req, res) => {
